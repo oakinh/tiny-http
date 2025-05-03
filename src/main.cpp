@@ -9,6 +9,12 @@
 #define PORT 8080
 
 int main() {
+    std::string response = "HTTP/1.1 200 OK\r\n"
+"Content-Type: text/plain\r\n"
+"Content-Length: 13\r\n"
+"\r\n"
+"Hello world\r\n";
+
     char buffer[1024] = {0};
     struct sockaddr_in address;
     int opt = 1;
@@ -41,8 +47,18 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    read(new_socket, buffer, 1024);
+    int n = read(new_socket, buffer, 1024);
+    if (n < 0) {
+        perror("ERROR reading from socket");
+        exit(EXIT_FAILURE);
+    }
     std::cout << "Message from client: " << buffer << std::endl;
+    std::cout << "Writing response..." << std::endl;
+    n = write(new_socket, response.c_str(), response.length());
+    if (n < 0) {
+        perror("ERROR writing to socket");
+        exit(EXIT_FAILURE);
+    }
 
     close(new_socket);
     close(sockfd);
