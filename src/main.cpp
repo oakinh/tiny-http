@@ -5,8 +5,12 @@
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
+#include <sstream>
+#include "../include/parse.h"
+
 
 #define PORT 8080
+#define BUFFER_LENGTH 1024
 
 int main() {
     std::string response = "HTTP/1.1 200 OK\r\n"
@@ -15,7 +19,7 @@ int main() {
 "\r\n"
 "Hello world\r\n";
 
-    char buffer[1024] = {0};
+    char buffer[BUFFER_LENGTH] = {0};
     struct sockaddr_in address;
     int opt = 1;
     int addrlen = sizeof(address);
@@ -41,27 +45,35 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    int new_socket = accept(sockfd, (struct sockaddr *)&address, (socklen_t *)&addrlen);
-    if (new_socket < 0) {
-        perror("accept");
-        exit(EXIT_FAILURE);
-    }
+    while (true) {
+        int new_socket = accept(sockfd, (struct sockaddr *)&address, (socklen_t *)&addrlen);
+        if (new_socket < 0) {
+            perror("accept");
+            exit(EXIT_FAILURE);
+        }
+    
+        int bytesRead = read(new_socket, buffer, BUFFER_LENGTH);
+        if (bytesRead < 0) {
+            perror("ERROR reading from socket");
+            exit(EXIT_FAILURE);
+        }
+        buffer[bytesRead] = '\0';
+        std::cout << "Message from client: " << buffer << std::endl;
 
-    int n = read(new_socket, buffer, 1024);
-    if (n < 0) {
-        perror("ERROR reading from socket");
-        exit(EXIT_FAILURE);
-    }
-    std::cout << "Message from client: " << buffer << std::endl;
-    std::cout << "Writing response..." << std::endl;
-    n = write(new_socket, response.c_str(), response.length());
-    if (n < 0) {
-        perror("ERROR writing to socket");
-        exit(EXIT_FAILURE);
-    }
+        parseRequest(buffer, static_cast<size_t>(bytesRead));
 
-    close(new_socket);
+        std::cout << "Writing response..." << std::endl;
+        int bytesWritten = write(new_socket, response.c_str(), response.length());
+        if (bytesWritten < 0) {
+            perror("ERROR writing to socket");
+            exit(EXIT_FAILURE);
+        }
+        close(new_socket);
+    }
+    
+
     close(sockfd);
 
     return 0;
-}   
+}
+
