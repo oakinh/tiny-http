@@ -7,7 +7,8 @@
 #include <errno.h>
 #include <sstream>
 #include "../include/parse.h"
-
+#include "../include/respond.h"
+#include <format>
 
 #define PORT 8080
 #define BUFFER_LENGTH 1024
@@ -26,7 +27,7 @@ int main() {
 
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (!sockfd) {
-        perror("socket failed");
+        std::cerr << "socket failed\n";
         exit(EXIT_FAILURE);
     }
     setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
@@ -36,25 +37,25 @@ int main() {
     
     
     if (bind(sockfd, (struct sockaddr*)&address, sizeof(address)) < 0) {
-        perror("bind failed");
+        std::cerr << "bind failed\n";
         exit(EXIT_FAILURE);
     }
 
     if (listen(sockfd, 3) < 0) {
-        perror("listen");
+        std::cerr << "listen\n";
         exit(EXIT_FAILURE);
     }
 
     while (true) {
-        int new_socket = accept(sockfd, (struct sockaddr *)&address, (socklen_t *)&addrlen);
-        if (new_socket < 0) {
-            perror("accept");
+        int newSocket = accept(sockfd, (struct sockaddr *)&address, (socklen_t *)&addrlen);
+        if (newSocket < 0) {
+            std::cerr << "accept\n";
             exit(EXIT_FAILURE);
         }
     
-        int bytesRead = read(new_socket, buffer, BUFFER_LENGTH);
+        int bytesRead = read(newSocket, buffer, BUFFER_LENGTH);
         if (bytesRead < 0) {
-            perror("ERROR reading from socket");
+            std::cerr << "ERROR reading from socket\n";
             exit(EXIT_FAILURE);
         }
         buffer[bytesRead] = '\0';
@@ -63,12 +64,13 @@ int main() {
         parseRequest(buffer, static_cast<size_t>(bytesRead));
 
         std::cout << "Writing response..." << std::endl;
-        int bytesWritten = write(new_socket, response.c_str(), response.length());
+        sendHtmlResponse(newSocket, "../static/index.html");
+        int bytesWritten = write(newSocket, response.c_str(), response.length());
         if (bytesWritten < 0) {
-            perror("ERROR writing to socket");
+            std::cerr << "ERROR writing to socket\n";
             exit(EXIT_FAILURE);
         }
-        close(new_socket);
+        close(newSocket);
     }
     
 
@@ -76,4 +78,3 @@ int main() {
 
     return 0;
 }
-
