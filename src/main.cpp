@@ -9,17 +9,12 @@
 #include "../include/parse.h"
 #include "../include/respond.h"
 #include <format>
+#include "router.h"
 
 #define PORT 8080
 #define BUFFER_LENGTH 1024
 
 int main() {
-    std::string response = "HTTP/1.1 200 OK\r\n"
-"Content-Type: text/plain\r\n"
-"Content-Length: 13\r\n"
-"\r\n"
-"Hello world\r\n";
-
     char buffer[BUFFER_LENGTH] = {0};
     struct sockaddr_in address;
     int opt = 1;
@@ -61,15 +56,11 @@ int main() {
         buffer[bytesRead] = '\0';
         std::cout << "Message from client: " << buffer << std::endl;
 
-        parseRequest(buffer, static_cast<size_t>(bytesRead));
+        HttpRequest parsedRequest = parseRequest(buffer, static_cast<size_t>(bytesRead));
 
         std::cout << "Writing response..." << std::endl;
-        sendHtmlResponse(newSocket, "../static/index.html");
-        int bytesWritten = write(newSocket, response.c_str(), response.length());
-        if (bytesWritten < 0) {
-            std::cerr << "ERROR writing to socket\n";
-            exit(EXIT_FAILURE);
-        }
+        routeRequest(parsedRequest.method, parsedRequest.path, newSocket);
+
         close(newSocket);
     }
     

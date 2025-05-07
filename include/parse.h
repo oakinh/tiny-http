@@ -2,8 +2,17 @@
 
 #include <iostream>
 
+enum class HttpMethod {
+    GET,
+    POST,
+    PUT,
+    PATCH,
+    DELETE_,
+    UNKNOWN,
+};
+
 struct HttpRequest {
-    std::string method;
+    HttpMethod method = HttpMethod::UNKNOWN;
     std::string path;
     std::string query;
     std::string protocolVersion;
@@ -16,13 +25,6 @@ struct HttpRequest {
     std::string body;
 };
 
-enum class HttpMethod {
-    GET,
-    POST,
-    PUT,
-    PATCH,
-    DELETE,
-};
-
+HttpMethod stringToMethod(const std::string &raw);
 HttpRequest parseRequest(const char* request, size_t arrSize);
 std::string methodToString(HttpMethod method);

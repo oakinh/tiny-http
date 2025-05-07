@@ -1,11 +1,23 @@
-#include <string.h>
 #include <iostream>
 #include <sstream>
 #include "parse.h"
+#include <string>
+#include <algorithm>
+
+HttpMethod stringToMethod(const std::string &raw) {
+    std::string s = raw;
+    std::transform(s.begin(), s.end(), s.begin(), ::toupper);
+    if (s == "GET") return HttpMethod::GET;
+    else if (s == "POST") return HttpMethod::POST;
+    else if (s == "PUT") return HttpMethod::PUT;
+    else if (s == "PATCH") return HttpMethod::PATCH;
+    else if (s == "DELETE") return HttpMethod::DELETE_;
+    else return HttpMethod::UNKNOWN; 
+}
 
 HttpRequest parseRequest(const char* request, size_t arrSize) {
 
-    HttpRequest parsedRequest;
+    HttpRequest parsedRequest{};
     
     std::string line;
 
@@ -22,11 +34,16 @@ HttpRequest parseRequest(const char* request, size_t arrSize) {
         if (lineComplete) {
             // Process line
 
-            if (parsedRequest.method.empty()) {
+            if (parsedRequest.method == HttpMethod::UNKNOWN) {
                 std::cout << "Parsing request..." << std::endl;
-                
+                std::string methodStr;
                 std::istringstream stream(line);
-                stream >> parsedRequest.method >> parsedRequest.path >> parsedRequest.protocolVersion;                
+                stream 
+                    >> methodStr 
+                    >> parsedRequest.path 
+                    >> parsedRequest.protocolVersion; 
+
+                parsedRequest.method = stringToMethod(methodStr);               
             } else {
                 // Handle other headers, order not guaranteed
                 std::istringstream stream(line);
@@ -57,7 +74,7 @@ std::string methodToString(HttpMethod method) {
         case HttpMethod::POST: return "POST";
         case HttpMethod::PUT: return "PUT";
         case HttpMethod::PATCH: return "PATCH";
-        case HttpMethod::DELETE: return "DELETE";
+        case HttpMethod::DELETE_: return "DELETE";
         default: return "UNKNOWN"; 
     }
 }
